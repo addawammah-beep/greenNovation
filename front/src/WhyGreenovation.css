@@ -1,0 +1,251 @@
+.why-greenovation-section {
+  width: 100%;
+  max-width: 1600px;
+  margin: -50px auto 0;
+  padding: 48px 24px;
+  box-sizing: border-box;
+  color: #26352c;
+  scroll-margin-top: 96px;
+}
+
+.why-greenovation-section::before {
+  content: "";
+  display: block;
+  width: min(100%, 1100px);
+  height: 2px;
+  margin: 0 auto 28px;
+  background: linear-gradient(90deg, transparent, rgba(76, 175, 80, 0.55), transparent);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.why-greenovation-title {
+  margin: 0 0 36px;
+  color: #263d30;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.why-greenovation-title::after {
+  content: "";
+  display: block;
+  width: 90px;
+  height: 4px;
+  margin: 10px auto 0;
+  border-radius: 999px;
+  background: #4caf50;
+}
+
+.mindmap-stage {
+  position: relative;
+  display: grid;
+  max-width: 1320px;
+  margin: 0 auto;
+  grid-template-columns: minmax(0, 1fr) minmax(230px, 0.72fr) minmax(0, 1fr);
+  grid-template-areas:
+    ". future ."
+    "becom center yasmin"
+    "difference difference difference";
+  align-items: center;
+  gap: 22px 26px;
+  isolation: isolate;
+}
+
+.mindmap-stage::before {
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: 50%;
+  width: min(74vw, 860px);
+  aspect-ratio: 1;
+  border: 2px dashed rgba(76, 175, 80, 0.3);
+  border-radius: 50%;
+  content: "";
+  transform: translate(-50%, -50%);
+}
+
+.mindmap-card {
+  position: relative;
+  padding: 16px 18px;
+  border: 1px solid #dce9dc;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 30px rgba(30, 75, 42, 0.1);
+  animation: mindmap-float 4.5s ease-in-out infinite;
+}
+
+.mindmap-card h3 {
+  margin: 0 0 7px;
+  color: #2e5438;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.mindmap-card p {
+  margin: 0;
+  color: #59665e;
+  font-size: 0.88rem;
+  line-height: 1.52;
+}
+
+.mindmap-card--future {
+  grid-area: future;
+  animation-delay: -1s;
+}
+
+.mindmap-card--becom {
+  grid-area: becom;
+  animation-delay: -2.5s;
+}
+
+.mindmap-card--yasmin {
+  grid-area: yasmin;
+  animation-delay: -3.5s;
+}
+
+.mindmap-card--difference {
+  grid-area: difference;
+  display: grid;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1.3fr);
+  align-items: center;
+  gap: 22px;
+  animation-delay: -1.8s;
+}
+
+.mindmap-card--difference h3 {
+  font-size: 1.05rem;
+}
+
+.mindmap-card__focus {
+  margin-bottom: 8px !important;
+  color: #3e784b !important;
+  font-weight: 600;
+}
+
+.mindmap-card__note {
+  color: #707c73 !important;
+  font-size: 0.84rem !important;
+  font-style: italic;
+}
+
+.future-plan-label {
+  margin: 0 0 5px !important;
+  color: #4a8855 !important;
+  font-size: 0.78rem !important;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mindmap-center {
+  position: relative;
+  display: grid;
+  grid-area: center;
+  min-width: 0;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 9px solid rgba(76, 175, 80, 0.18);
+  border-radius: 50%;
+  background: radial-gradient(circle, #f5fbf3 0 58%, #e1f0df 59% 100%);
+  box-shadow: 0 16px 42px rgba(33, 91, 46, 0.16);
+}
+
+.why-greenovation-main-image {
+  display: block;
+  width: 94%;
+  height: 94%;
+  border-radius: 50%;
+  object-fit: contain;
+}
+
+.why-greenovation-animated-icon {
+  position: absolute;
+  top: 5%;
+  left: 2%;
+  width: min(34%, 120px);
+  height: auto;
+  animation: mindmap-float 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes mindmap-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+@media (max-width: 1000px) {
+  .why-greenovation-section {
+    padding: 40px 20px;
+  }
+
+  .mindmap-stage {
+    grid-template-columns: minmax(0, 1fr) minmax(230px, 0.8fr) minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  .mindmap-card {
+    padding: 16px;
+  }
+
+  .mindmap-stage::before {
+    width: min(82vw, 700px);
+  }
+}
+
+@media (max-width: 760px) {
+  .why-greenovation-section {
+    margin-top: -50px;
+    padding: 32px 16px;
+  }
+
+  .why-greenovation-section::before {
+    margin-bottom: 22px;
+  }
+
+  .why-greenovation-title {
+    margin-bottom: 24px;
+  }
+
+  .mindmap-stage {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "center"
+      "future"
+      "becom"
+      "yasmin"
+      "difference";
+    gap: 16px;
+  }
+
+  .mindmap-center {
+    width: min(76vw, 330px);
+    justify-self: center;
+  }
+
+  .mindmap-stage::before {
+    display: none;
+  }
+
+  .mindmap-card {
+    animation-duration: 5.5s;
+  }
+
+  .mindmap-card--difference {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .mindmap-card,
+  .why-greenovation-animated-icon {
+    animation: none;
+  }
+}

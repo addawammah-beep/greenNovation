@@ -1,0 +1,461 @@
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { useEffect, useState } from "react";
+import { MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
+import { useNavigate } from 'react-router-dom';
+import AccountSidebar, { AccountPageHeader, AccountProfilePanel } from './AccountSidebar';
+import DiscountCouponRedemption from './DiscountCouponRedemption';
+import "./profile.css";
+
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
+});
+
+const DEFAULT_REQUEST_POSITION = [30.0444, 31.2357];
+
+const RequestMapView = ({ position }) => {
+  const map = useMap();
+  map.setView(position, 14);
+  return null;
+};
+
+const RequestLocationMarker = ({ position, onChange }) => {
+  useMapEvents({
+    click(event) {
+      onChange([event.latlng.lat, event.latlng.lng]);
+    }
+  });
+
+  return <Marker position={position}><Popup>Request location</Popup></Marker>;
+};
+
+function Profile({ setUser }) {
+  const navigate = useNavigate();
+  const [userData, setUserData] = useState(null);
+  const [userType, setUserType] = useState(null);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showRequestForm, setShowRequestForm] = useState(false);
+  const [requestForm, setRequestForm] = useState({ material_type: '', weight: '', location: '', description: '', gps: '' });
+  const [requestMapPosition, setRequestMapPosition] = useState(DEFAULT_REQUEST_POSITION);
+  const [confirmingRequestId, setConfirmingRequestId] = useState(null);
+  const [requestActionError, setRequestActionError] = useState('');
+  const [requestCreateError, setRequestCreateError] = useState('');
+  const [userCoupon, setUserCoupon] = useState(null);
+  const [creatingCoupon, setCreatingCoupon] = useState(false);
+  const [couponError, setCouponError] = useState('');
+
+  const getCompletionDuration = (request) => {
+    if (!request.collected_at || !request.completed_at) return null;
+    const durationMs = new Date(request.completed_at) - new Date(request.collected_at);
+    if (!Number.isFinite(durationMs) || durationMs < 0) return null;
+    const minutes = Math.floor(durationMs / 60000);
+    const hours = Math.floor(minutes / 60);
+    return hours ? `${hours}h ${minutes % 60}m` : `${minutes}m`;
+  };
+
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem("greenovation_user"));
+    const storedUserType = localStorage.getItem("greenovation_user_type");
+    setUserData(storedUser);
+    setUserType(storedUserType);
+
+    if (storedUser) {
+      fetchUserData(storedUser, storedUserType);
+    }
+  }, []);
+
+  const fetchUserData = async (user, type) => {
+    try {
+      setLoading(true);
+      setRequestActionError('');
+      if (type === 'user') {
+        const requestsResponse = await fetch(`http://localhost:4000/api/requests/user/${user.id}`);
+        if (requestsResponse.ok) setRequests(await requestsResponse.json());
+
+        const headers = { Authorization: `Bearer ${localStorage.getItem('greenovation_token') || ''}` };
+        const response = await fetch('http://localhost:4000/api/v2/user/discount-coupon', { headers });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to load discount coupon');
+        setUserCoupon(data.coupon || null);
+        if (data.points !== undefined) {
+          const updatedUser = { ...user, points: Number(data.points) };
+          setUserData(updatedUser);
+          localStorage.setItem('greenovation_user', JSON.stringify(updatedUser));
+        }
+      }
+    } catch (error) {
+      setRequestActionError(error.message || 'Failed to load profile data');
+      console.error('Error fetching profile data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (userType !== 'user' || !userData?.id) return undefined;
+
+    let active = true;
+    let refreshing = false;
+    const refreshCoupon = async () => {
+      if (refreshing || document.visibilityState === 'hidden') return;
+      refreshing = true;
+      try {
+        const headers = { Authorization: `Bearer ${localStorage.getItem('greenovation_token') || ''}` };
+        const response = await fetch('http://localhost:4000/api/v2/user/discount-coupon', { headers });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to refresh discount coupon');
+        if (!active) return;
+        setUserCoupon(data.coupon || null);
+        if (data.points !== undefined) {
+          const points = Number(data.points);
+          setUserData(current => {
+            if (!current || Number(current.points) === points) return current;
+            const updatedUser = { ...current, points };
+            localStorage.setItem('greenovation_user', JSON.stringify(updatedUser));
+            return updatedUser;
+          });
+        }
+      } catch (error) {
+        if (active) setCouponError(error.message || 'Failed to refresh discount coupon');
+      } finally {
+        refreshing = false;
+      }
+    };
+
+    const intervalId = setInterval(refreshCoupon, 5000);
+    window.addEventListener('focus', refreshCoupon);
+    document.addEventListener('visibilitychange', refreshCoupon);
+    return () => {
+      active = false;
+      clearInterval(intervalId);
+      window.removeEventListener('focus', refreshCoupon);
+      document.removeEventListener('visibilitychange', refreshCoupon);
+    };
+  }, [userType, userData?.id]);
+
+  const handleCreateUserCoupon = async () => {
+    setCouponError('');
+    try {
+      setCreatingCoupon(true);
+      const response = await fetch('http://localhost:4000/api/v2/user/discount-coupon', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('greenovation_token') || ''}`
+        }
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Failed to create discount coupon');
+      setUserCoupon(data.coupon);
+      const updatedUser = { ...userData, points: Number(data.points) };
+      setUserData(updatedUser);
+      localStorage.setItem('greenovation_user', JSON.stringify(updatedUser));
+    } catch (error) {
+      setCouponError(error.message || 'Failed to create discount coupon');
+    } finally {
+      setCreatingCoupon(false);
+    }
+  };
+
+  const handleSignOut = () => {
+    localStorage.removeItem('greenovation_user');
+    localStorage.removeItem('greenovation_user_type');
+    localStorage.removeItem('greenovation_token');
+    setUser(null);
+    navigate('/');
+  };
+
+  if (!userData) return <h2>Please login first.</h2>;
+
+  const completedRequests = requests.filter(request => String(request.status).toLowerCase() === 'completed');
+  const assignedRequests = requests.filter(request => (
+    (request.status === 'assigned' || request.status === 'in_progress') && request.collector_id
+  ));
+  const openRequests = requests.filter(request => (
+    String(request.status).toLowerCase() !== 'completed' && !assignedRequests.some(assigned => assigned.id === request.id)
+  ));
+  const renderRequestCard = (request, showCompletionDetails = false) => (
+    <article key={request.id} className="profile-request-card">
+      <div className="profile-request-card-header">
+        <strong>Request #{request.id}</strong>
+        <span className={`profile-request-status ${request.status}`}>{request.status}</span>
+      </div>
+      <div className="profile-request-details">
+        <p><b>Material:</b> {request.material_type || 'Not provided'}</p>
+        <p><b>Weight:</b> {request.weight ?? request.estimated_weight} kg</p>
+        <p><b>Location:</b> {request.location}</p>
+        {request.description && <p><b>Description:</b> {request.description}</p>}
+        {showCompletionDetails && (
+          <>
+            <p><b>Collector:</b> {request.collector_name || 'Not provided'}</p>
+            <p><b>Completed:</b> {request.completed_at ? new Date(request.completed_at).toLocaleString() : 'Not provided'}</p>
+            {request.collected_weight && <p><b>Collected quantity:</b> {request.collected_weight} kg (requested: {request.weight ?? request.estimated_weight} kg)</p>}
+            {getCompletionDuration(request) && <p><b>Duration:</b> {getCompletionDuration(request)}</p>}
+          </>
+        )}
+        {!showCompletionDetails && request.collector_name && (
+          <p><b>Collector:</b> {request.collector_name}</p>
+        )}
+          {request.collector_profile_image && <img className="collector-profile-thumb" src={request.collector_profile_image} alt="Collector" />}
+          {request.status === 'assigned' && <div className="profile-request-actions"><button type="button" onClick={() => handleRequestDecision(request.id, 'accept')}>Select Collector</button><button type="button" onClick={() => handleRequestDecision(request.id, 'reject')}>Reject</button></div>}
+          {['AWAITING_USER_CONFIRMATION', 'completion_pending', 'waiting_user_weight_confirmation'].includes(request.status) && <div className="profile-request-actions"><p><b>Collector Actual Weight:</b> {request.actual_weight ?? request.collected_weight} kg</p><button type="button" disabled={confirmingRequestId === request.id} onClick={() => handleRequestDecision(request.id, 'confirm')}>{confirmingRequestId === request.id ? 'Saving...' : 'Confirm Weight'}</button><button type="button" disabled={confirmingRequestId === request.id} onClick={() => handleRequestDecision(request.id, 'dispute')}>Dispute Weight</button></div>}
+          {['pending', 'CREATED'].includes(request.status) && request.collector_candidates?.length > 0 && (
+            <div className="collector-candidates">
+              <p><b>Collectors interested in this request:</b></p>
+              {request.collector_candidates.map(candidate => (
+                <div key={candidate.id} className="collector-candidate-row">
+                  {candidate.profile_image && <img src={candidate.profile_image} alt="Collector" className="collector-profile-thumb" />}
+                  <a href={`/collector-profile/${candidate.id}`} className="collector-profile-link">{candidate.name || 'Collector'}</a>
+                  <button type="button" onClick={() => handleSelectCollector(request.id, candidate.id)}>Select</button>
+                </div>
+              ))}
+            </div>
+          )}
+      </div>
+    </article>
+  );
+
+  const handleRequestInput = (event) => {
+    setRequestForm({ ...requestForm, [event.target.name]: event.target.value });
+  };
+
+  const resolveRequestCity = async (position) => {
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${position[0]}&lon=${position[1]}`);
+      const data = await response.json();
+      const address = data.address || {};
+      return address.city || address.town || address.village || address.municipality || 'Selected location';
+    } catch (geocodeError) {
+      return 'Selected location';
+    }
+  };
+
+  const handleRequestMapLocation = async (position) => {
+    setRequestMapPosition(position);
+    const city = await resolveRequestCity(position);
+    setRequestForm(previous => ({
+      ...previous,
+      location: city,
+      gps: `${position[0].toFixed(6)},${position[1].toFixed(6)}`
+    }));
+  };
+
+  const handleRequestGPS = () => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => handleRequestMapLocation([coords.latitude, coords.longitude]),
+      () => console.error('Failed to get GPS location')
+    );
+  };
+
+  const handleCreateRequest = async (event) => {
+    event.preventDefault();
+    setRequestCreateError('');
+    try {
+      const token = localStorage.getItem('greenovation_token');
+      const response = await fetch('http://localhost:4000/api/v2/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({
+          material_type: requestForm.material_type,
+          estimated_weight: parseFloat(requestForm.weight),
+          location: requestForm.location,
+          description: requestForm.description,
+          gps: requestForm.gps || null
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        const message = response.status === 403
+          ? 'This session does not have permission to create user requests. Sign out and sign back in with a user account, then try again.'
+          : data.error || 'Failed to create request';
+        throw new Error(message);
+      }
+      setRequests([data.request || data, ...requests]);
+      setRequestForm({ material_type: '', weight: '', location: '', description: '', gps: '' });
+      setShowRequestForm(false);
+    } catch (requestError) {
+      setRequestCreateError(requestError.message || 'Failed to create request');
+      console.error(requestError);
+    }
+  };
+
+  const handleRequestDecision = async (requestId, action) => {
+    const endpoint = action === 'confirm' || action === 'reject-completion' ? 'confirm-completion' : 'respond';
+    const requestAction = action === 'confirm' ? 'confirm' : action === 'reject-completion' ? 'reject' : action;
+    try {
+      setConfirmingRequestId(requestId);
+      setRequestActionError('');
+      const token = localStorage.getItem('greenovation_token');
+      const isWeightDecision = action === 'confirm' || action === 'dispute';
+      if (isWeightDecision && !token) throw new Error('Your session has expired. Please sign in again.');
+      const response = await fetch(isWeightDecision
+        ? `http://localhost:4000/api/v2/requests/${requestId}/weight-confirmation`
+        : `http://localhost:4000/api/requests/${endpoint}`, {
+        method: isWeightDecision ? 'POST' : 'PUT',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: isWeightDecision
+          ? JSON.stringify({ action })
+          : JSON.stringify({ request_id: requestId, user_id: userData.id, action: requestAction })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message = response.status === 403 && isWeightDecision
+          ? 'This session does not have user permissions to confirm weight. Sign out and sign back in with a user account, then try again.'
+          : data.error || 'Unable to update request';
+        throw new Error(message);
+      }
+      if (!data.request) throw new Error('The server did not return the updated request. Please refresh and check its status.');
+      setRequests(current => current.map(request => String(request.id) === String(requestId) ? { ...request, ...data.request } : request));
+      if (data.user) {
+        const updatedUser = { ...userData, ...data.user };
+        setUserData(updatedUser);
+        localStorage.setItem('greenovation_user', JSON.stringify(updatedUser));
+      }
+    } catch (error) {
+      setRequestActionError(error.message);
+    } finally {
+      setConfirmingRequestId(null);
+    }
+  };
+
+  const handleSelectCollector = async (requestId, collectorId) => {
+    try {
+      setRequestActionError('');
+      const response = await fetch('http://localhost:4000/api/requests/select-collector', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request_id: requestId, user_id: userData.id, collector_id: collectorId })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to select collector');
+      setRequests(current => current.map(request => request.id === requestId
+        ? { ...request, ...data.request, collector_id: collectorId, status: 'in_progress' }
+        : request));
+    } catch (error) {
+      setRequestActionError(error.message || 'Failed to select collector');
+    }
+  };
+
+  return (
+    <div className="account-layout">
+      <AccountSidebar userData={userData} userType={userType} onSignOut={handleSignOut} onRefresh={() => fetchUserData(userData, userType)} refreshing={loading} sections={userType === 'user' ? [{ id: 'requests', label: 'My Requests' }] : []} />
+      <main className="account-main profile-container">
+      <AccountPageHeader title="My Profile" />
+      <AccountProfilePanel userData={userData} userType={userType} />
+      {requestActionError && <p className="profile-request-action-error" role="alert">{requestActionError}</p>}
+      
+      <div className="profile-card">
+        {userType === "user" && (
+          <>
+            <section className="points-balance-row" aria-label="Points balance">
+              <div>
+                <span>Total points</span>
+                <strong>{Number(userData.points || 0).toLocaleString(undefined, { maximumFractionDigits: 3 })}</strong>
+              </div>
+            </section>
+            <section className="user-discount-coupon" aria-labelledby="user-discount-coupon-title">
+              <div>
+                <p className="dashboard-label">YOUR REWARD</p>
+                <h2 id="user-discount-coupon-title">20% discount coupon</h2>
+                <p>Generate a one-time coupon for a seller. When it is redeemed, your current points balance will be used and deducted.</p>
+              </div>
+              {userCoupon?.status === 'active' ? (
+                <div className="user-discount-coupon-code">
+                  <span>Your coupon number</span>
+                  <strong>{userCoupon.code}</strong>
+                  <small>Show this number to the seller. It can only be used once.</small>
+                </div>
+              ) : userCoupon?.status === 'redeemed' ? (
+                <p className="user-discount-coupon-redeemed" role="status">
+                  Your last coupon was used. {Number(userCoupon.points_deducted || 0).toLocaleString(undefined, { maximumFractionDigits: 3 })} points were deducted.
+                </p>
+              ) : null}
+              {couponError && <p className="profile-request-action-error" role="alert">{couponError}</p>}
+              <button
+                type="button"
+                className="user-discount-coupon-button"
+                disabled={creatingCoupon || userCoupon?.status === 'active' || Number(userData.points || 0) <= 0}
+                onClick={handleCreateUserCoupon}
+              >
+                {creatingCoupon ? 'Creating...' : userCoupon?.status === 'active' ? 'Coupon ready' : Number(userData.points || 0) <= 0 ? 'Earn points to create a coupon' : 'Generate my coupon'}
+              </button>
+            </section>
+            <section className="user-request-section completed-requests-section">
+              <div className="user-request-section-heading"><p className="dashboard-label">HISTORY</p><h2>Completed Requests</h2><p>Requests collected and completed successfully.</p></div>
+              <div className="profile-request-grid">{completedRequests.length ? completedRequests.map(request => renderRequestCard(request, true)) : <p className="profile-empty-state">No completed requests yet.</p>}</div>
+            </section>
+            <section className="user-request-section add-request-section">
+              <div className="user-request-section-heading"><p className="dashboard-label">NEW COLLECTION</p><h2>Add a Request</h2><p>Create a new recycling collection request from your dashboard.</p></div>
+              <button type="button" className="profile-add-request-button" onClick={() => { setShowRequestForm(!showRequestForm); setRequestCreateError(''); }}>{showRequestForm ? 'Cancel' : '+ New Request'}</button>
+              {showRequestForm && (
+                <form className="profile-request-form" onSubmit={handleCreateRequest}>
+                  {requestCreateError && <p className="profile-request-action-error" role="alert">{requestCreateError}</p>}
+                  <label>Material Type<select name="material_type" value={requestForm.material_type} onChange={handleRequestInput} required><option value="">Select material type</option><option value="plastic">Plastic</option><option value="paper">Paper</option><option value="metal">Metal</option><option value="glass">Glass</option><option value="organic">Organic</option><option value="other">Other</option></select></label>
+                  <label>Weight (kg)<input type="number" name="weight" min="0.1" step="0.1" value={requestForm.weight} onChange={handleRequestInput} required /></label>
+                  <div className="profile-request-location-field">
+                    <label>Location</label>
+                    <input name="location" value={requestForm.location} onChange={handleRequestInput} placeholder="Select a location on the map" required />
+                    <label>GPS Coordinates</label>
+                    <div className="profile-request-map">
+                      <MapContainer center={requestMapPosition} zoom={14} className="map">
+                        <RequestMapView position={requestMapPosition} />
+                        <TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                        <RequestLocationMarker position={requestMapPosition} onChange={handleRequestMapLocation} />
+                      </MapContainer>
+                    </div>
+                    <button type="button" className="profile-gps-button" onClick={handleRequestGPS}>Use My Current Location</button>
+                  </div>
+                  <label>Description<textarea name="description" value={requestForm.description} onChange={handleRequestInput} rows="4" /></label>
+                  <button type="submit" className="profile-save-button">Submit Request</button>
+                </form>
+              )}
+            </section>
+            <section id="requests" className="user-request-section pending-requests-section">
+              <div className="user-request-section-heading"><p className="dashboard-label">OPEN WORK</p><h2>Requests Not Completed</h2><p>Requests still waiting for a collector.</p></div>
+              <div className="profile-request-grid">{openRequests.length ? openRequests.map(request => renderRequestCard(request)) : <p className="profile-empty-state">No open requests.</p>}</div>
+            </section>
+            <section className="user-request-section assigned-requests-section">
+              <div className="user-request-section-heading"><p className="dashboard-label">ASSIGNED WORK</p><h2>Requests Assigned to a Collector</h2><p>A collector has selected these requests, but they are not completed yet.</p></div>
+              <div className="profile-request-grid">{assignedRequests.length ? assignedRequests.map(request => renderRequestCard(request)) : <p className="profile-empty-state">No assigned requests.</p>}</div>
+            </section>
+          </>
+        )}
+
+        {/* قسم البائع */}
+        {userType === "seller" && (
+          <section className="user-request-section">
+            <div className="user-request-section-heading">
+              <p className="dashboard-label">SELLER PORTAL</p>
+              <h2>Discount coupons</h2>
+              <p>Check a customer coupon and apply its discount at checkout.</p>
+            </div>
+            <DiscountCouponRedemption />
+          </section>
+        )}
+
+        {userType === "collector" && (
+          <>
+            <div className="profile-info">
+              <h2>Collector Information</h2>
+              <p><b>Name:</b> {userData.name}</p>
+              <p><b>Email:</b> {userData.email}</p>
+              <p><b>Phone:</b> {userData.phone || 'Not provided'}</p>
+              <p><b>Registry:</b> {userData.registry || 'Not provided'}</p>
+              <p><b>Location:</b> {userData.gps || 'Not provided'}</p>
+              <p><b>Points:</b> {userData.points || 0}</p>
+            </div>
+
+          </>
+        )}
+      </div>
+      </main>
+    </div>
+  );
+}
+
+export default Profile;

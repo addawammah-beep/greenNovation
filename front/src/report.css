@@ -1,0 +1,463 @@
+.report-section {
+  width: calc(100% - 120px);
+  max-width: 1480px;
+  margin: -50px auto 0;
+  padding: 0 24px 28px;
+  box-sizing: border-box;
+}
+
+.report-header {
+  margin: 0 0 6px;
+  text-align: left;
+}
+
+.report-header .section-title {
+  margin: 0 auto;
+  line-height: 1.2;
+  font-size: var(--font-size-xxl);
+  font-weight: var(--font-weight-bold);
+  color: var(--primary-color);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: max-content;
+  max-width: 100%;
+  text-align: center;
+}
+
+.report-header .section-title .report-issue-line {
+  position: relative;
+  top: 2px;
+}
+
+.report-header .section-title::after {
+  content: "";
+  display: block;
+  width: 90px;
+  height: 4px;
+  margin: 2px auto 0;
+  background: var(--secondary-color);
+  border-radius: 10px;
+}
+
+.report-header .text-muted {
+  color: #777;
+  font-size: var(--font-size-m);
+  line-height: 1.5;
+}
+
+.report-header .section-subtitle {
+  max-width: 900px;
+  margin: -8px auto 14px;
+  color: #607067;
+  font-size: 1.2rem;
+  font-weight: 400;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.report-content {
+  width: 100%;
+}
+
+.report-map {
+  min-width: 0;
+  grid-column: 1 / -1;
+}
+
+.report-map .location-btn {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.map {
+  width: 100%;
+  height: 300px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #dce6de;
+  box-shadow: 0 10px 28px rgba(15, 50, 30, 0.1);
+
+  position: relative;
+  z-index: 1;
+}
+
+.report-form {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  background: white;
+  padding: 14px;
+  border: 1px solid #e1e9e3;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(15, 50, 30, 0.08);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+  margin: 0;
+}
+
+.report-left-column,
+.report-details-column {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.report-submit-btn {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.report-form label {
+  font-weight: var(--font-weight-semibold);
+  color: var(--primary-color);
+}
+
+.report-form input,
+.report-form select,
+.report-form textarea {
+  width: 100%;
+  padding: 9px 11px;
+  border-radius: 9px;
+  border: 1px solid #d2ddd5;
+  font-size: var(--font-size-n);
+  background: #fafafa;
+  transition: 0.3s;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.report-form input:focus,
+.report-form select:focus,
+.report-form textarea:focus {
+  outline: none;
+  border-color: var(--secondary-color);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.15);
+}
+
+.report-form textarea {
+  height: 90px;
+  resize: none;
+}
+
+.location-btn {
+  background: white;
+  color: var(--secondary-color);
+  border: 2px solid var(--secondary-color);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: var(--font-size-n);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.location-btn:hover {
+  background: var(--secondary-color);
+  color: white;
+}
+
+.capture-details-note,
+.capture-details {
+  color: #56656c;
+  font-size: 0.9rem;
+}
+
+.capture-details p {
+  margin: 6px 0;
+  overflow-wrap: anywhere;
+}
+
+.image-upload-label {
+  display: grid;
+  gap: 8px;
+  color: #56656c;
+  font-size: 0.9rem;
+}
+
+.image-upload-label input {
+  padding: 10px;
+}
+
+.camera-error {
+  margin: 0;
+  color: #a12622;
+  font-size: 0.9rem;
+}
+
+.submit-btn {
+  margin-top: 6px;
+  padding: 11px 13px;
+  border: none;
+  border-radius: 10px;
+  background: var(--secondary-color);
+  color: white;
+  font-size: var(--font-size-m);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.submit-btn:hover {
+  background: #3e9642;
+  transform: translateY(-2px);
+}
+
+.submit-btn:disabled {
+  cursor: wait;
+  opacity: 0.7;
+  transform: none;
+}
+
+/* الميديا كويري (الشاشات الأصغر) */
+@media (max-width: 900px) {
+  .report-section {
+    width: calc(100% - 48px);
+  }
+
+  .report-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .map {
+    height: 280px;
+  }
+}
+
+@media (max-width: 768px) {
+  .report-section {
+    width: calc(100% - 24px);
+    margin-top: 10px;
+    padding: 0 12px 32px;
+  }
+
+  .report-form {
+    gap: 9px;
+  }
+
+  .camera-preview {
+    height: 180px;
+  }
+
+  .report-header {
+    text-align: left;
+  }
+
+  .report-header .section-title::after {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .report-header .section-title::after {
+    margin: 10px auto 0; /* تم التعديل لتتوسط تحت العنوان */
+  }
+
+  .map {
+    height: 300px; /* تم التعديل من 30 بكسل عشان الخريطة تبان */
+  }
+
+  .report-form {
+    padding: 20px; /* تم التعديل من 2 بكسل عشان الفورم ميكونش لازق */
+    margin-top: 0; /* إلغاء المسافة السلبية في الموبايل عشان العناصر متدخلش في بعض */
+  }
+}
+
+@media (max-width: 480px) {
+  .report-section {
+    width: calc(100% - 16px);
+    margin-top: 8px;
+    padding: 0 8px 28px;
+  }
+
+  .report-header .section-title {
+    font-size: var(--font-size-xl);
+  }
+
+  .report-header .text-muted {
+    font-size: var(--font-size-n);
+  }
+
+  .map {
+    height: 200px;
+  }
+
+  .location-btn,
+  .submit-btn {
+    width: 100%;
+  }
+}
+
+
+/* قسم الكاميرا والمعاينة */
+.camera-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.camera-btn {
+  background: #f0f4f8;
+  color: #333;
+  border: 1px dashed #4CAF50;
+  padding: 12px;
+  text-align: center;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.3s ease;
+}
+
+.camera-btn:hover {
+  background: #e8f5e9;
+  border-color: #3e9642;
+}
+
+.image-preview img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+}
+.camera-preview{
+
+width:100%;
+
+height:190px;
+
+display:none;
+
+border-radius:15px;
+
+object-fit:cover;
+
+background:#ddd;
+
+}
+
+.camera-box--active .camera-preview {
+  display: block;
+}
+
+.captured-image{
+
+margin-top:15px;
+
+width:100%;
+
+border-radius:15px;
+
+}
+
+.camera-box{
+
+display:grid;
+
+grid-template-columns:minmax(0,1fr);
+
+align-items:start;
+
+gap:10px;
+
+}
+
+.camera-error,
+.camera-box .camera-preview,
+.camera-box .captured-image,
+.camera-box .capture-details {
+  grid-column: 1 / -1;
+}
+
+.camera-box .image-upload-label {
+  min-width: 0;
+}
+
+.camera-box > .submit-btn {
+  width: 100%;
+}
+
+.camera-box--has-image {
+  grid-template-columns: minmax(240px, 1.25fr) minmax(0, 0.75fr);
+  align-items: center;
+}
+
+.camera-box--has-image .captured-image {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  width: 100%;
+  height: 190px;
+  margin: 0;
+  object-fit: cover;
+}
+
+.camera-box--has-image > .submit-btn,
+.camera-box--has-image .image-upload-label {
+  grid-column: 2;
+  width: 65%;
+  justify-self: start;
+}
+
+.camera-box--has-image > .submit-btn {
+  grid-row: 1;
+}
+
+.camera-box--has-image .image-upload-label {
+  grid-row: 2;
+  font-size: 0.95rem;
+  gap: 8px;
+}
+
+.camera-box--has-image .image-upload-label input {
+  min-height: 44px;
+  padding: 9px;
+  font-size: 0.9rem;
+}
+
+.camera-box--has-image > .submit-btn {
+  min-height: 46px;
+  padding: 12px 14px;
+  margin-top: 0;
+  font-size: 1rem;
+}
+
+.camera-box--has-image .capture-details {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 480px) {
+  .camera-box--has-image {
+    grid-template-columns: minmax(150px, 0.9fr) minmax(0, 1.1fr);
+  }
+
+  .camera-box--has-image .captured-image {
+    height: 155px;
+  }
+
+  .camera-box--has-image > .submit-btn,
+  .camera-box--has-image .image-upload-label {
+    width: 75%;
+  }
+}
+
+@media (max-width: 768px) {
+  .report-header .section-title::after {
+    margin: 2px auto 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .report-section .map {
+    height: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .report-section .map {
+    height: 200px;
+  }
+}

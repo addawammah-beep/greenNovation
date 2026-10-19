@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS seller_tax_point_credits CASCADE;
+DROP TABLE IF EXISTS product_orders CASCADE;
+DROP TABLE IF EXISTS seller_products CASCADE;
+DROP TABLE IF EXISTS offers CASCADE;
